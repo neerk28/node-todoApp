@@ -6,9 +6,10 @@ const {User} = require('./models/user');
 const {ObjectID} = require('mongodb');
 
 var app = express();
+var port = process.env.PORT || 3000;
 
-app.listen(3000, () => {
-    console.log('Server started on port 3000');
+app.listen(port, () => {
+    console.log(`Server started on port ${port}`);
 })
 
 app.use(bodyParser.json());
@@ -27,8 +28,8 @@ app.post('/todos', (req, res) => {
 });
 
 app.get('/todos', (req, res) => {
-    Todo.find().then(docs => {
-        res.send({docs});
+    Todo.find().then(todos => {
+        res.send({todos});
     }).catch(e => {
         res.status(400).send(e);
     })
@@ -39,11 +40,11 @@ app.get('/todos/:id', (req, res) => {
     if(!ObjectID.isValid(id)){
         return res.status(404).send({message: 'ID not found'});
     }
-    Todo.findById(id).then(doc => {
-        if(!doc){
+    Todo.findById(id).then(todo => {
+        if(!todo){
             return res.status(404).send({message: 'ID not found'});
         }
-        res.send({doc});
+        res.send({todo});
     }).catch(e => {
         res.status(400).send(e);
     })
