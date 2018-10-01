@@ -49,6 +49,17 @@ UserSchema.methods.toJSON = function (){
     return _.pick(userObject, ['_id','email']);
 }
 
+UserSchema.methods.removeToken = function(token){
+    var user = this;
+    return user.updateOne({
+        $pull:{
+            tokens:{
+                token: token
+            }
+        }
+    });
+}
+
 UserSchema.statics.findByToken = function (token){ //model method should be include in statics
     var User = this; //model
     var decoded;
