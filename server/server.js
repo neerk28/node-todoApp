@@ -144,3 +144,16 @@ app.delete('/users/me/token', authenticate.authenticate, (req, res) => {
         res.status(400).send();
     })
 })
+
+app.get('/', (req, res) => {
+    var json = {
+        CREATE_USER : 'POST /users  - pass in email and password',
+        GET_USER_BY_TOKEN : 'GET /users/me  - pass token as x-auth in header',
+        CREATE_TODO : 'POST /todos  - pass in text and x-auth',
+        GETALL_TODOS : 'GET /todos  - pass in x-auth',
+        GET_TODO_BY_ID : 'GET /todos  - pass in x-auth and id in url',
+        UPDATE_TODO_BY_ID : 'PATCH /todos  - pass in x-auth, id in url and data in body',
+        DELETE_TODO_BY_ID : 'DELETE /todos  - pass in x-auth and id in url'
+    }
+    res.send(JSON.stringify(json, undefined, 2));
+})
