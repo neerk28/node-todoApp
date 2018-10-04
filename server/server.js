@@ -16,6 +16,18 @@ app.listen(port, () => {
 
 app.use(bodyParser.json());
 
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,X-Requested-With');
+    // allow preflight
+    if (req.method === 'OPTIONS') {
+        res.send(200);
+    } else {
+        next();
+    }
+})
+
 app.post('/todos', authenticate.authenticate, (req, res) => {
     var todo = new Todo({
         text: req.body.text,
@@ -32,13 +44,23 @@ app.post('/todos', authenticate.authenticate, (req, res) => {
 
 //return todos created by that user
 app.get('/todos', authenticate.authenticate, (req, res) => {
+    var sortAttribute = req.query.sort || 'text';
+    var sortField;
+    if (sortAttribute === 'completed') {
+        sortField = { completed: -1 };
+    } else if (sortAttribute === 'completedAt') {
+        sortField = { completedAt: -1 };
+    } else {
+        sortField = { text: 1 };
+    }
     Todo.find({
         _creator: req.user._id
-    }).then(todos => {
+    }).sort(sortField).exec((err, todos) => {
+        if (err) {
+            res.status(400).send(err);
+        }
         res.send({ todos });
-    }).catch(e => {
-        res.status(400).send(e);
-    })
+    });
 });
 
 app.get('/todos/:id', authenticate.authenticate, (req, res) => {
@@ -147,13 +169,14 @@ app.delete('/users/me/token', authenticate.authenticate, (req, res) => {
 
 app.get('/', (req, res) => {
     var json = {
-        CREATE_USER : 'POST /users  - pass in email and password',
-        GET_USER_BY_TOKEN : 'GET /users/me  - pass token as x-auth in header',
-        CREATE_TODO : 'POST /todos  - pass in text and x-auth',
-        GETALL_TODOS : 'GET /todos  - pass in x-auth',
-        GET_TODO_BY_ID : 'GET /todos  - pass in x-auth and id in url',
-        UPDATE_TODO_BY_ID : 'PATCH /todos  - pass in x-auth, id in url and data in body',
-        DELETE_TODO_BY_ID : 'DELETE /todos  - pass in x-auth and id in url'
+        CREATE_USER: 'POST /users  - pass in email and password',
+        GET_USER_BY_TOKEN: 'GET /users/me  - pass token as x-auth in header',
+        CREATE_TODO: 'POST /todos  - pass in text and x-auth',
+        GETALL_TODOS: 'GET /todos  - pass in x-auth',
+        GET_TODO_BY_ID: 'GET /todos  - pass in x-auth and id in url',
+        UPDATE_TODO_BY_ID: 'PATCH /todos  - pass in x-auth, id in url and data in body',
+        DELETE_TODO_BY_ID: 'DELETE /todos  - pass in x-auth and id in url',
+        YET_TO_IMPLEMENT: 'search by completed, sort by text, check CORS'
     }
     res.send(JSON.stringify(json, undefined, 2));
 })
