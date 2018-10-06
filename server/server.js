@@ -16,6 +16,7 @@ app.listen(port, () => {
 
 app.use(bodyParser.json());
 
+//CORS
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,PATCH,POST,DELETE,OPTIONS');
@@ -44,23 +45,21 @@ app.post('/todos', authenticate.authenticate, (req, res) => {
 
 //return todos created by that user
 app.get('/todos', authenticate.authenticate, (req, res) => {
-    var sortAttribute = req.query.sort || 'text';
-    var sortField;
-    if (sortAttribute === 'completed') {
-        sortField = { completed: -1 };
-    } else if (sortAttribute === 'completedAt') {
-        sortField = { completedAt: -1 };
-    } else {
-        sortField = { text: 1 };
-    }
+    var searchField = req.query.search;
+    var sortField = req.query.sort || 'text';
+    var sortOrder = req.query.order || 'asc';
     Todo.find({
-        _creator: req.user._id
-    }).sort(sortField).exec((err, todos) => {
-        if (err) {
-            res.status(400).send(err);
-        }
-        res.send({ todos });
-    });
+        _creator: req.user._id,
+    }).then(todos => {
+        var filteredTodo = todos.filter(element => {
+            if(element.text.includes(searchField)){
+                return element;
+            };
+        })
+        res.send(_.orderBy(filteredTodo, [sortField], [sortOrder]));
+    }).catch(e => {
+        res.status(400).send(e);
+    })
 });
 
 app.get('/todos/:id', authenticate.authenticate, (req, res) => {
@@ -75,7 +74,7 @@ app.get('/todos/:id', authenticate.authenticate, (req, res) => {
         if (!todo) {
             return res.status(404).send({ message: 'ID not found' });
         }
-        res.send({ todo });
+        res.send({todo});
     }).catch(e => {
         res.status(400).send(e);
     })
@@ -172,11 +171,38 @@ app.get('/', (req, res) => {
         CREATE_USER: 'POST /users  - pass in email and password',
         GET_USER_BY_TOKEN: 'GET /users/me  - pass token as x-auth in header',
         CREATE_TODO: 'POST /todos  - pass in text and x-auth',
-        GETALL_TODOS: 'GET /todos  - pass in x-auth',
+        GETALL_TODOS: 'GET /todos?sort=completed&&order=desc&&search=b  - pass in x-auth',
         GET_TODO_BY_ID: 'GET /todos  - pass in x-auth and id in url',
         UPDATE_TODO_BY_ID: 'PATCH /todos  - pass in x-auth, id in url and data in body',
-        DELETE_TODO_BY_ID: 'DELETE /todos  - pass in x-auth and id in url',
-        YET_TO_IMPLEMENT: 'search by completed, sort by text, check CORS'
+        DELETE_TODO_BY_ID: 'DELETE /todos  - pass in x-auth and id in url'
     }
     res.send(JSON.stringify(json, undefined, 2));
 })
+
+/* sort using mongodb features
+ var sortAttribute = req.query.sort || 'text';
+    var sortOrder = req.query.order || 'asc';
+    var value;
+    if(sortOrder === 'asc'){
+        value = 1;
+    }else if(sortOrder === 'desc'){
+        value = -1;
+    }
+    var sortField;
+    if (sortAttribute === 'completed') {
+        sortField = { completed: value };
+    } else if (sortAttribute === 'completedAt') {
+        sortField = { completedAt: value };
+    } else {
+        sortField = { text: value };
+    }
+    Todo.find({
+        _creator: req.user._id,
+    //    text: /searchField/
+    }).sort(sortField).exec((err, todos) => {
+        if (err) {
+            res.status(400).send(err);
+        }
+        res.send({ todos });
+    });
+ */
